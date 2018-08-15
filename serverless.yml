@@ -1,0 +1,38 @@
+service: mHealth-subscription-service
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  profile: pin
+  stage: ${opt:stage, 'dev'}
+  region: ap-southeast-1
+  environment:
+    SMART_AUTH_TOKEN: ${file(./config.${self:provider.stage}.json):SMART_AUTH_TOKEN}
+    SMART_ACCESS_USER: ${file(./config.${self:provider.stage}.json):SMART_ACCESS_USER}
+    SMART_ACCESS_PASSWORD: ${file(./config.${self:provider.stage}.json):SMART_ACCESS_PASSWORD}
+    PUSH_ACCESS_TOKEN: ${file(./config.${self:provider.stage}.json):PUSH_ACCESS_TOKEN}
+
+functions:
+  subscribe:
+    handler: controllers/subscription.subscribe
+    timeout: 30
+    events:
+      - http: GET subscription/subscribe
+
+  unsubscribe:
+    handler: controllers/subscription.unsubscribe
+    timeout: 30
+    events:
+      - http: GET subscription/unsubscribe
+
+  webhook_workaround_subscribe:
+    handler: controllers/unstableWebhookWorkaround.subscribe
+    timeout: 300
+    events:
+      - schedule: rate(1 hour)
+
+  webhook_workaround_unsubscribe:
+    handler: controllers/unstableWebhookWorkaround.unsubscribe
+    timeout: 300
+    events:
+      - schedule: rate(1 hour)
