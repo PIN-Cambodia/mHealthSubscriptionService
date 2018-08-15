@@ -61,3 +61,5 @@ typings/
 .next
 .serverless
 .idea
+config.dev.json
+config.prod.json
