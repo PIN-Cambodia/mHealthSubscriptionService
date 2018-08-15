@@ -10,7 +10,6 @@ const primaryGroup = '317f1a84-58f4-45b0-8aa1-889536641332'
 // This file is made as the Push webhook is unstable, so instead of calling the subscription controller
 // directly over HTTP, we shuffle contacts around in groups in push and read from the groups.
 
-// TODO remove subscription controller and only use this one to reduce code
 module.exports.subscribe = (event, context, callback) => {
   // Get contacts in the pending to cancel subscribe groups
   push.forEachContact({ group: confirmSubscriptionGroup }, (contact, next) => {

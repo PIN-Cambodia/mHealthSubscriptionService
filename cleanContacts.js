@@ -8,7 +8,7 @@ let getResultPage = (url) => {
   request({
     method: 'GET',
     url: url,
-    headers: { Authorization: `Token 4a7c45f23347ab416e0812a548d7e8fcf0a87daf` },
+    headers: { Authorization: `Token ` + process.env.PUSH_ACCESS_TOKEN },
     qs: { group: '317f1a84-58f4-45b0-8aa1-889536641332' }, // Query only the main group
     json: true
   }, function (error, response, body) {
