@@ -17,12 +17,12 @@ module.exports.getAccessToken = () => {
       json: true
     }).then(response =>{
       if(!response || !response.body.access_token || response.statusCode != 200)
-        throw Error(`Unexpected return from Smart in token api! Smart returned HTTP ${response.statusCode}. Body: ${JSON.stringify(body)}`)
+        throw Error(`ERROR: (1) Unexpected return from Smart in token api! Smart returned HTTP ${response.statusCode}. Body: ${JSON.stringify(body)}`)
 
       return response.body.access_token
     })
-    .catch(response => {
-      throw Error(`Unexpected return from Smart in token api! Smart returned HTTP ${response.statusCode}. Body: ${JSON.stringify(response.body)}`)
+    .catch(err => {
+      throw Error(`ERROR: (2) Unexpected return from Smart in token api! err: ${JSON.stringify(err)}`)
     })
 }
 
@@ -103,7 +103,7 @@ module.exports.addOffering = (phonenumber, expiry) => {
     })
     .then(response => {
       if(!response || response.statusCode != 200 || !response.body.ChangeSupplementaryOfferingRspMsg)
-        throw Error(`Unexpected return from Smart in addOffering! Smart returned HTTP ${response.statusCode} for phonenumber ${phonenumber.substr(4)}. Body: ${JSON.stringify(response.body)}`)
+        throw Error(`ERROR: (1) Unexpected return from Smart in addOffering! Smart returned HTTP ${response.statusCode} for phonenumber ${phonenumber.substr(4)}. Body: ${JSON.stringify(response.body)}`)
 
       // 0000 is success
       if(response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnCode == "0000")
@@ -113,6 +113,10 @@ module.exports.addOffering = (phonenumber, expiry) => {
       if(response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnCode == "1057")
         return true
 
+      // 1005 means that the subscriber has been removed from smart's database
+      if(response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnCode == "1005")
+        return response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnMsg
+
       // 1058 means that the user does not have enough money
       if(response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnCode == "1058")
         return response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnMsg
@@ -121,10 +125,10 @@ module.exports.addOffering = (phonenumber, expiry) => {
       if(response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnCode == "9999")
         return response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnMsg
 
-      throw Error(`Unexpected response from Smart in addOffering - ${response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnCode}, '${response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnMsg}'`)
+      throw Error(`ERROR: (2) Unexpected response from Smart in addOffering - ${response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnCode}, '${response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnMsg}'`)
     })
-    .catch(response => {
-      throw Error(`Unexpected return from Smart in addOffering! Smart returned ${JSON.stringify(response)}`)
+    .catch(err => {
+      throw Error(`ERROR: (3) Unexpected return from Smart in addOffering! err: ${err}`)
     })
 }
 
@@ -159,7 +163,7 @@ module.exports.deleteOffering = phonenumber => {
     })
     .then(response => {
       if(!response || response.statusCode != 200 || !response.body.ChangeSupplementaryOfferingRspMsg) {
-        throw Error(`Unexpected return from Smart in deleteOffering! Smart returned HTTP ${response.statusCode}. Body: ${JSON.stringify(response.body)}`)
+        throw Error(`ERROR: (1) Unexpected return from Smart in deleteOffering! Smart returned HTTP ${response.statusCode}. response: ${JSON.stringify(response)}`)
       }
 
       // 1057 means that the offer is already active on the beneficiary. 0000 is success
@@ -178,9 +182,9 @@ module.exports.deleteOffering = phonenumber => {
       if(response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnCode == "9999")
         return response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnMsg
 
-      throw Error(`Unexpected response from Smart in deleteOffering - ${response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnCode}, '${response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnMsg}'`)
+      throw Error(`ERROR: (2) Unexpected response from Smart in deleteOffering - ${response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnCode}, '${response.body.ChangeSupplementaryOfferingRspMsg.RspHeader.ReturnMsg}'`)
     })
-    .catch(response => {
-      throw Error(`Unexpected return from Smart in deleteOffering! Smart returned HTTP ${response.statusCode}. Body: ${JSON.stringify(response.body)}`)
+    .catch(err => {
+      throw Error(`ERROR: (3) Unexpected return from Smart in deleteOffering! err: ${err}`)
     })
 }

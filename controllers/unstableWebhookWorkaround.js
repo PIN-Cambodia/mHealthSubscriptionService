@@ -2,6 +2,9 @@
 const subscriptionController = require('./subscription.js')
 const push = require('../helpers/push.js')
 const request = require("request-promise")
+const AWS = require('aws-sdk');
+AWS.config.region = 'ap-southeast-1';
+const lambda = new AWS.Lambda();
 
 const cancelSubscriptionGroup = '43849796-4ca1-4a2f-a628-756d99ef4e3e'
 const confirmSubscriptionGroup = '1c18f094-b0dd-4d37-b13b-8a83c022541f'
@@ -26,8 +29,23 @@ module.exports.subscribe = (event, context, callback) => {
         if(error)
           throw Error(error)
 
-        if(success.statusCode != 200)
-          next()
+        if(success.statusCode != 200) {
+          if(JSON.parse(success.body).status == 'unrecoverable') {
+            console.info(`Removing user ${contact.uuid} due to unrecoverable status`);
+            push.removeFromAllGroups(contact.uuid)
+              .then(response => {
+                console.log(`Successfully removed ${contact.uuid} from all groups`)
+                next()
+              })
+              .catch(error => {
+                console.log(`ERROR: Could not remove user ${contact.uuid} from all groups, got error: ${error}`)
+                next()
+              })
+            }
+            else {
+              next()
+          }
+        }
         else
           return push.addToGroup(contact.uuid, primaryGroup)
             .then(response => {
@@ -35,11 +53,23 @@ module.exports.subscribe = (event, context, callback) => {
               next()
             })
             .catch(error => {
-              console.log(`Could not add user ${contact.uuid} to group, got error: ${error}`)
+              console.log(`ERROR: Could not add user ${contact.uuid} to group, got error: ${error}`)
               next()
             })
       })
-    })
+    }, null,
+    // To avoid issues with lambda running out of time, we fire a new lambda instead of looping on to the next result page directly
+    (nextPage) => {
+      exports.handler = function(event, context) {
+        lambda.invoke({
+          FunctionName: 'mHealth-subscription-service-prod-subscribe', // the lambda function we are going to invoke
+          InvocationType: 'RequestResponse',
+          LogType: 'Tail',
+          Payload: '{ "nextPageUrl" : "' + nextPage + '" }'
+        })
+      };
+    },
+    event.nextPageUrl ? event.nextPageUrl : null)
 }
 
 module.exports.unsubscribe = (event, context, callback) => {
@@ -61,7 +91,7 @@ module.exports.unsubscribe = (event, context, callback) => {
               next()
             })
             .catch(error => {
-              console.log(`Could not remove user ${contact.uuid} from all groups, got error: ${error}`)
+              console.log(`ERROR: Could not remove user ${contact.uuid} from all groups, got error: ${error}`)
               next()
             })
       })

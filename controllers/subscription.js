@@ -31,8 +31,25 @@ module.exports.subscribe = (event, context, callback) => {
         }
         else return Promise.reject(`Subscribe failed (returned ${status})`)
       })
-      .catch(error => {
-        console.info(`Got error from subscribe: ${error}`);
+      .catch(err => {
+        console.info(`Got error from subscribe: ${err}`);
+        // If err is an Error, it's most likely a temporary issue, so we make sure to avoid these
+
+        // Don't continue to retry for numbers that we cannot recover from
+        if(!err instanceof Error && err.match('The subscriber payment type and offering payment type are different')) {
+          return callback(null, {
+              statusCode: 500,
+              headers: { 'Content-Type': 'application/json' },
+              body: '{"status": "unrecoverable", "message": "User has wrong payment type. Please do not retry."}'
+          });
+        }
+        else if(!err instanceof Error && err.match('The subscriber does not exist.')) {
+          return callback(null, {
+              statusCode: 500,
+              headers: { 'Content-Type': 'application/json' },
+              body: '{"status": "unrecoverable", "message": "The subscriber does not exist. Please do not retry."}'
+          });
+        }
         return callback(null, {
             statusCode: 500,
             headers: { 'Content-Type': 'application/json' },

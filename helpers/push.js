@@ -1,7 +1,7 @@
 'use strict'
 const request = require('request-promise')
 
-module.exports.forEachContact = (qs, callback, finalCallback) => {
+module.exports.forEachContact = (qs, callback, finalCallback, invokeNextCallback, nextPageUrl) => {
   let handleContactsPage = (url) => {
     return request({ method: 'GET',
       url: url,
@@ -21,7 +21,7 @@ module.exports.forEachContact = (qs, callback, finalCallback) => {
       let handlerIterator = index => {
         if(index == response.results.length) {
           if(response.next !== null) {
-            return handleContactsPage(response.next);
+            return invokeNextCallback? invokeNextCallback(response.next) : handleContactsPage(response.next);
           }
           return finalCallback ? finalCallback() : "No more contacts pending"
         }
@@ -33,12 +33,12 @@ module.exports.forEachContact = (qs, callback, finalCallback) => {
     })
   }
 
-  return handleContactsPage('http://push.ilhasoft.mobi/api/v2/contacts.json')
+  return handleContactsPage(nextPageUrl ? nextPageUrl : 'http://push.ilhasoft.mobi/api/v2/contacts.json')
 }
 
 module.exports.addToGroup = (uuid, group) => {
   return request({ method: 'POST',
-    url: 'http://push.ilhasoft.mobi/api/v2/contacts.json',
+    url: 'https://push.ilhasoft.mobi/api/v2/contacts.json',
     qs: { uuid: uuid },
     headers: {
       'Content-Type': 'application/json',
@@ -51,7 +51,7 @@ module.exports.addToGroup = (uuid, group) => {
 
 module.exports.removeFromAllGroups = (uuid) => {
   return request({ method: 'POST',
-    url: 'http://push.ilhasoft.mobi/api/v2/contacts.json',
+    url: 'https://push.ilhasoft.mobi/api/v2/contacts.json',
     qs: { uuid: uuid },
     headers: {
       'Content-Type': 'application/json',
